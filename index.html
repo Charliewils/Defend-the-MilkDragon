@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>保卫奶龙</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='18' r='12' fill='%23ffe566'/%3E%3Ccircle cx='12' cy='14' r='2' fill='%232c3e50'/%3E%3Ccircle cx='20' cy='14' r='2' fill='%232c3e50'/%3E%3Cpath d='M12 20 Q16 24 20 20' stroke='%232c3e50' fill='none' stroke-width='1.5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css?v=3">
+  <script src="https://cdn.jsdelivr.net/npm/brain.js"></script>
+</head>
+<body>
+  <div id="menu-page" class="menu-page">
+    <div id="main-menu" class="screen menu-screen"></div>
+    <footer id="main-menu-made-by" class="main-menu-made-by">制作者:黄铭远、陈家瑞</footer>
+  </div>
+  <div id="gem-shop"></div>
+  <div id="level-select" class="screen level-select-screen hidden"></div>
+  <div id="endless-select" class="screen endless-select-screen hidden"></div>
+  <div id="game-screen" class="screen game-screen hidden">
+    <div id="hud">
+      <div>金币: <span id="gold">150</span></div>
+      <div>波次: <span id="wave">1</span>/<span id="wave-total">6</span></div>
+      <div class="hud-lives" aria-label="剩余生命">
+        <span class="hud-lives-icon" aria-hidden="true">♥</span>
+        <span id="lives">5</span>
+      </div>
+      <div id="audio-controls"></div>
+      <div id="speed-controls" class="speed-controls-wrap"></div>
+      <div class="hud-controls" id="game-controls"></div>
+      <div class="hud-wave-progress">
+        <div class="wave-progress-label" id="wave-progress-label">本波进度 0/10</div>
+        <div class="wave-progress-track">
+          <div class="wave-progress-fill" id="wave-progress-fill"></div>
+        </div>
+      </div>
+    </div>
+    <div id="item-slot-wrap"></div>
+    <div id="game-wrap">
+      <div class="game-stage">
+        <div id="tower-panel" class="tower-panel hidden"></div>
+        <div id="mode-badge" class="mode-badge hidden">无尽模式</div>
+        <div id="endless-stats" class="endless-stats hidden" aria-live="polite">
+          <span class="endless-stats-line">当前波次 <span id="endless-wave">1</span></span>
+          <span class="endless-stats-sep" aria-hidden="true">·</span>
+          <span class="endless-stats-line">历史最高 <span id="endless-best">0</span></span>
+        </div>
+        <div id="wave-preview" class="wave-preview hidden" aria-live="polite">
+          <div class="wave-preview-title">第 1 波</div>
+          <div class="wave-preview-detail"></div>
+          <div class="wave-preview-boss hidden">⚠️ Boss波！</div>
+        </div>
+        <div id="freeze-countdown" class="freeze-countdown hidden" aria-live="polite"></div>
+        <div id="power-surge-hud" class="power-surge-hud hidden">
+          <span class="power-surge-label">强化脉冲</span>
+          <div class="power-surge-bar-track">
+            <div id="power-surge-fill" class="power-surge-bar-fill"></div>
+          </div>
+        </div>
+        <div id="ai-difficulty-mount"></div>
+        <canvas id="game" width="800" height="600"></canvas>
+        <div id="result-screen" class="result-screen hidden"></div>
+      </div>
+      <div id="tower-bar"></div>
+    </div>
+  </div>
+  <script type="module">
+    import('./js/main.js?v=3');
+  </script>
+</body>
+</html>
