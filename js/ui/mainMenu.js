@@ -1,4 +1,14 @@
-export function createMainMenu(container, { onCampaign, onEndless, onShop, onAiInfo, getGemBalance }) {
+import { createMenuScene } from './menuScene.js';
+
+export function createMainMenu(container, {
+  onCampaign,
+  onEndless,
+  onShop,
+  onAiInfo,
+  onCodexTowers,
+  onCodexEnemies,
+  getGemBalance
+}) {
   container.innerHTML = `
     <div class="menu-utility-bar">
       <div id="menu-audio-controls" class="menu-audio-controls"></div>
@@ -10,11 +20,18 @@ export function createMainMenu(container, { onCampaign, onEndless, onShop, onAiI
         <button type="button" class="menu-shop-btn" data-action="shop">宝石商店</button>
       </div>
     </div>
+    <div class="menu-hero-host"></div>
     <h1 class="menu-title">保卫奶龙</h1>
     <p class="menu-subtitle">选择你的战场</p>
-    <div class="menu-actions">
-      <button type="button" class="menu-btn" data-action="campaign">闯关模式</button>
-      <button type="button" class="menu-btn menu-btn-secondary" data-action="endless">无尽模式</button>
+    <div class="menu-play-row">
+      <div class="menu-codex-col">
+        <button type="button" class="menu-codex-btn" data-action="codex-towers">炮台图鉴</button>
+        <button type="button" class="menu-codex-btn" data-action="codex-enemies">敌人图鉴</button>
+      </div>
+      <div class="menu-actions">
+        <button type="button" class="menu-btn" data-action="campaign">闯关模式</button>
+        <button type="button" class="menu-btn menu-btn-secondary" data-action="endless">无尽模式</button>
+      </div>
     </div>
     <button type="button" class="menu-ai-info-btn" data-action="ai-info">AI说明</button>
   `;
@@ -29,7 +46,15 @@ export function createMainMenu(container, { onCampaign, onEndless, onShop, onAiI
   container.querySelector('[data-action="endless"]').addEventListener('click', () => onEndless());
   container.querySelector('[data-action="shop"]').addEventListener('click', () => onShop?.());
   container.querySelector('[data-action="ai-info"]')?.addEventListener('click', () => onAiInfo?.());
+  container.querySelector('[data-action="codex-towers"]')?.addEventListener('click', () => onCodexTowers?.());
+  container.querySelector('[data-action="codex-enemies"]')?.addEventListener('click', () => onCodexEnemies?.());
+
+  const menuScene = createMenuScene(container.querySelector('.menu-hero-host'));
 
   refresh();
-  return { refresh };
+  return {
+    refresh,
+    startScene: () => menuScene.start(),
+    stopScene: () => menuScene.stop()
+  };
 }

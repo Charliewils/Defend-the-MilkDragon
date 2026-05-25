@@ -13,7 +13,7 @@ import { createWavePreview } from './ui/wavePreview.js';
 import { recordLevelVictory } from './storage/levelProgress.js';
 import { getGemBalance } from './storage/gemInventory.js';
 import { setItemLoadout } from './storage/itemLoadout.js';
-import { clearSessionDocument, loadSessionDocument, sessionMatchesStart } from './storage/sessionSave.js';
+import { loadModeSession } from './storage/sessionSave.js';
 import { audioManager } from './audio/index.js';
 import { createGemShop } from './ui/gemShop.js';
 import { createItemLoadoutModal } from './ui/itemLoadoutModal.js';
@@ -21,6 +21,7 @@ import { createItemSlotBar } from './ui/itemSlotBar.js';
 import { GameAI } from './ai/GameAI.js';
 import { createDifficultyPanel } from './ui/difficultyPanel.js';
 import { createAiInfoModal } from './ui/aiInfoModal.js';
+import { createCodexModal } from './ui/codexModal.js';
 
 audioManager.bindUserGesture();
 
@@ -29,6 +30,9 @@ gameAI.trainAll();
 
 const aiInfoModal = createAiInfoModal();
 aiInfoModal.mount(document.body);
+
+const codexModal = createCodexModal();
+codexModal.mount(document.body);
 
 const difficultyPanel = createDifficultyPanel();
 difficultyPanel.mount(document.getElementById('ai-difficulty-mount'));
@@ -75,7 +79,7 @@ const itemLoadoutModal = createItemLoadoutModal(document.body, {
       ) {
         resumeFromSave = true;
       } else {
-        game.clearSessionSave?.();
+        game.clearSessionSave?.(next.mode);
       }
     }
     showGame({ ...next, resumeFromSave });
@@ -106,6 +110,14 @@ mainMenu = createMainMenu(mainMenuScreen, {
   onAiInfo: () => {
     audioManager.playSound('uiClick');
     aiInfoModal.open();
+  },
+  onCodexTowers: () => {
+    audioManager.playSound('uiClick');
+    codexModal.open('towers');
+  },
+  onCodexEnemies: () => {
+    audioManager.playSound('uiClick');
+    codexModal.open('enemies');
   },
   getGemBalance
 });
@@ -238,6 +250,7 @@ function showScreen(screenName) {
   }
   game.stop();
   gemShop.close();
+  codexModal.close();
   hideAllScreens();
   document.body.classList.remove('in-game');
   difficultyPanel.hide();
@@ -247,10 +260,13 @@ function showScreen(screenName) {
     mainMenuScreen.classList.remove('hidden');
     mainMenuMadeByEl?.classList.remove('hidden');
     mainMenu.refresh();
+    mainMenu.startScene?.();
     gemShop.close();
     audioManager.setBGM('mainMenuBGM');
     return;
   }
+
+  mainMenu.stopScene?.();
 
   if (screenName === 'campaign') {
     levelSelectScreen.classList.remove('hidden');
@@ -277,12 +293,7 @@ function showGame(next) {
   const { mode, levelId, mapId, resumeFromSave } = next;
   resultScreen.hide();
   gemShop.close();
-  if (!resumeFromSave) {
-    const doc = loadSessionDocument();
-    if (doc && !sessionMatchesStart(doc, { mode, levelId: levelId ?? null, mapId: mapId ?? null })) {
-      clearSessionDocument();
-    }
-  }
+  codexModal.close();
   hideAllScreens();
   gameScreen.classList.remove('hidden');
   gameScreen.classList.toggle('is-endless', mode === 'endless');
@@ -295,7 +306,7 @@ function showGame(next) {
   });
 
   if (mode === 'endless') {
-    const doc = resumeFromSave ? loadSessionDocument() : null;
+    const doc = resumeFromSave ? loadModeSession('endless') : null;
     const waveForBgm = doc?.snapshot?.wave ?? 1;
     audioManager.setBGM('endlessBGM', { wave: waveForBgm });
     game.startEndlessMap(mapId, { resumeFromSave: Boolean(resumeFromSave) });

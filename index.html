@@ -8,8 +8,11 @@
   <meta http-equiv="Expires" content="0">
   <title>保卫奶龙</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='18' r='12' fill='%23ffe566'/%3E%3Ccircle cx='12' cy='14' r='2' fill='%232c3e50'/%3E%3Ccircle cx='20' cy='14' r='2' fill='%232c3e50'/%3E%3Cpath d='M12 20 Q16 24 20 20' stroke='%232c3e50' fill='none' stroke-width='1.5'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/style.css?v=3">
-  <script src="https://cdn.jsdelivr.net/npm/brain.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=10">
+  <script src="assets/brain.min.js"></script>
 </head>
 <body>
   <div id="menu-page" class="menu-page">
@@ -21,11 +24,11 @@
   <div id="endless-select" class="screen endless-select-screen hidden"></div>
   <div id="game-screen" class="screen game-screen hidden">
     <div id="hud">
-      <div>金币: <span id="gold">150</span></div>
-      <div>波次: <span id="wave">1</span>/<span id="wave-total">6</span></div>
-      <div class="hud-lives" aria-label="剩余生命">
-        <span class="hud-lives-icon" aria-hidden="true">♥</span>
-        <span id="lives">5</span>
+      <div class="hud-stat hud-stat-gold"><span class="hud-stat-label">金币</span><span id="gold" class="hud-stat-value">150</span></div>
+      <div class="hud-stat hud-stat-wave"><span class="hud-stat-label">波次</span><span class="hud-stat-value"><span id="wave">1</span>/<span id="wave-total">6</span></span></div>
+      <div class="hud-stat hud-lives" aria-label="剩余生命">
+        <span class="hud-stat-label">生命</span>
+        <span class="hud-stat-value"><span class="hud-lives-icon" aria-hidden="true">♥</span><span id="lives">5</span></span>
       </div>
       <div id="audio-controls"></div>
       <div id="speed-controls" class="speed-controls-wrap"></div>

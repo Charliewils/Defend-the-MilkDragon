@@ -132,8 +132,10 @@ export class SplitWorm extends Enemy {
     const gapBroken = this.hurtJiggleT > 0;
 
     const greens = this.isMiniSplit
-      ? ['#58d68d', '#45b369']
-      : ['#2d6a2d', '#348834', '#3d9c3d', '#4caf50'];
+      ? ['#82e0aa', '#2ecc71', '#27ae60']
+      : hurt
+        ? ['#1a4a1a', '#2d6a2d', '#348834', '#3d9c3d']
+        : ['#2d6a2d', '#348834', '#52be80', '#76d7c4'];
 
     const positions = delays.map((d) => this.getSegmentPos(d));
     if (splitShift > 0) {
@@ -175,14 +177,39 @@ export class SplitWorm extends Enemy {
     }
 
     const h = positions[0];
-    ctx.fillStyle = '#f7dc6f';
+    // 发光眼睛
+    const eyeGrad1 = ctx.createRadialGradient(h.x - 5, h.y - 2, 0, h.x - 5, h.y - 2, 3.5);
+    eyeGrad1.addColorStop(0, '#ffff88');
+    eyeGrad1.addColorStop(0.5, hurt ? '#ff8800' : '#f0c000');
+    eyeGrad1.addColorStop(1, '#1a1a00');
+    ctx.fillStyle = eyeGrad1;
     ctx.beginPath();
-    ctx.arc(h.x - 5, h.y - 2, 3, 0, Math.PI * 2);
-    ctx.arc(h.x + 5, h.y - 2, 3, 0, Math.PI * 2);
+    ctx.arc(h.x - 5, h.y - 2, 3.2, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(h.x - 5 - 0.5, h.y - 5, 1.2, 5);
-    ctx.fillRect(h.x + 5 - 0.5, h.y - 5, 1.2, 5);
+    const eyeGrad2 = ctx.createRadialGradient(h.x + 5, h.y - 2, 0, h.x + 5, h.y - 2, 3.5);
+    eyeGrad2.addColorStop(0, '#ffff88');
+    eyeGrad2.addColorStop(0.5, hurt ? '#ff8800' : '#f0c000');
+    eyeGrad2.addColorStop(1, '#1a1a00');
+    ctx.fillStyle = eyeGrad2;
+    ctx.beginPath();
+    ctx.arc(h.x + 5, h.y - 2, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    // 竖缝眼孔
+    ctx.strokeStyle = '#1a1a00';
+    ctx.lineWidth = 1.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(h.x - 5, h.y - 5);
+    ctx.lineTo(h.x - 5, h.y + 1);
+    ctx.moveTo(h.x + 5, h.y - 5);
+    ctx.lineTo(h.x + 5, h.y + 1);
+    ctx.stroke();
+    // 眼神高光
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath();
+    ctx.arc(h.x - 5.8, h.y - 3, 0.8, 0, Math.PI * 2);
+    ctx.arc(h.x + 4.2, h.y - 3, 0.8, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.save();
     ctx.translate(h.x, h.y - this.headRadius - 8);

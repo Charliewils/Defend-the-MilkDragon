@@ -18,6 +18,17 @@ function drawPathThumbnail(canvas, mapId) {
 
   ctx.clearRect(0, 0, width, height);
 
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.45);
+  skyGrad.addColorStop(0, '#87ceeb');
+  skyGrad.addColorStop(1, theme.grass);
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, width, height * 0.42);
+
+  ctx.fillStyle = 'rgba(249, 231, 159, 0.85)';
+  ctx.beginPath();
+  ctx.arc(width * 0.82, height * 0.14, Math.min(width, height) * 0.06, 0, Math.PI * 2);
+  ctx.fill();
+
   for (let row = 0; row < THUMB_ROWS; row += 1) {
     for (let col = 0; col < THUMB_COLS; col += 1) {
       const onPath = pathCells.has(`${col},${row}`);

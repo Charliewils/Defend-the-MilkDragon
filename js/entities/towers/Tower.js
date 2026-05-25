@@ -9,6 +9,12 @@ import { applyTowerSkinToConfig } from '../../cosmetics/towerSkins.js';
 import { getEquippedTowerSkin } from '../../storage/gemInventory.js';
 import { cellCenter } from '../../map/grid.js';
 import { createTowerBullet } from '../Bullet.js';
+import {
+  drawCannonBarrel,
+  drawRadialBody,
+  drawTowerPlatform,
+  drawTowerShadow
+} from '../../render/vectorArt.js';
 import { MuzzleFlash } from '../MuzzleFlash.js';
 import { playTowerShootSound } from '../../audio/combatSounds.js';
 
@@ -184,20 +190,44 @@ export class Tower {
   drawRange(ctx) {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(241, 196, 15, 0.12)';
+    const g = ctx.createRadialGradient(this.x, this.y, this.range * 0.3, this.x, this.y, this.range);
+    g.addColorStop(0, 'rgba(241, 196, 15, 0.14)');
+    g.addColorStop(1, 'rgba(241, 196, 15, 0.04)');
+    ctx.fillStyle = g;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(241, 196, 15, 0.9)';
+    ctx.strokeStyle = 'rgba(241, 196, 15, 0.75)';
     ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
     ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   drawLevelBadge(ctx) {
     if (this.level <= 1) return;
-    ctx.fillStyle = '#f1c40f';
-    ctx.font = 'bold 11px sans-serif';
+    const bx = this.x;
+    const by = this.y - this.radius - 9;
+    ctx.save();
+    // 徽章背景
+    const badgeW = 26;
+    const badgeH = 13;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx - badgeW / 2, by - badgeH / 2, badgeW, badgeH, 4);
+    else ctx.rect(bx - badgeW / 2, by - badgeH / 2, badgeW, badgeH);
+    const bg = ctx.createLinearGradient(bx, by - badgeH / 2, bx, by + badgeH / 2);
+    bg.addColorStop(0, '#ffe566');
+    bg.addColorStop(1, '#c8a200');
+    ctx.fillStyle = bg;
+    ctx.fill();
+    ctx.strokeStyle = '#7a6000';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // 文字
+    ctx.fillStyle = '#1a0e00';
+    ctx.font = 'bold 9px "Noto Sans SC", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`Lv${this.level}`, this.x, this.y - this.radius - 8);
+    ctx.fillText(`Lv${this.level}`, bx, by + 0.5);
+    ctx.restore();
   }
 
   draw(ctx, showRange) {
@@ -211,19 +241,16 @@ export class Tower {
   drawTower(ctx) {
     ctx.save();
     ctx.translate(this.x, this.y);
+    drawTowerShadow(ctx, 0, 0, this.radius);
     ctx.rotate(this.angle);
-
-    ctx.beginPath();
-    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = this.config.color;
-    ctx.fill();
-    ctx.strokeStyle = this.config.stroke;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = this.config.barrel;
-    ctx.fillRect(6, -3, 14, 6);
-
+    drawTowerPlatform(ctx, this.radius, this.config.color, this.config.stroke);
+    drawRadialBody(ctx, 0, 0, this.radius * 0.82, {
+      light: this.config.color,
+      base: this.config.color,
+      dark: this.config.stroke,
+      stroke: this.config.stroke
+    });
+    drawCannonBarrel(ctx, 14, 6, this.config.barrel, this.config.stroke);
     ctx.restore();
   }
 

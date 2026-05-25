@@ -56,10 +56,10 @@ import { ItemManager } from './items/ItemManager.js';
 import { getItemLoadout } from './storage/itemLoadout.js';
 import { Particle } from './entities/Particle.js';
 import {
-  clearSessionDocument,
-  loadSessionDocument,
-  saveSessionDocument,
-  SESSION_SAVE_VERSION,
+  clearModeSession,
+  hasModeSession,
+  loadModeSession,
+  saveModeSession,
   sessionMatchesStart
 } from './storage/sessionSave.js';
 import {
@@ -468,16 +468,19 @@ export function createGame({
 
   function persistMidGameSave() {
     if (gameOver || levelFinished) return;
-    const doc = {
-      version: SESSION_SAVE_VERSION,
+    saveModeSession(sessionMode, {
       savedAt: Date.now(),
-      mode: sessionMode,
-      campaignLevelId: sessionMode === 'campaign' ? currentLevelId : null,
-      endlessMapId: sessionMode === 'endless' ? endlessMapId : null,
       paused,
-      snapshot: buildBattleSnapshot()
-    };
-    saveSessionDocument(doc);
+      snapshot: buildBattleSnapshot(),
+      campaignLevelId: sessionMode === 'campaign' ? currentLevelId : null,
+      endlessMapId: sessionMode === 'endless' ? endlessMapId : null
+    });
+  }
+
+  /** 无尽模式：当前波次超过历史最高时立即写入本地记录 */
+  function syncEndlessBestWave() {
+    if (!isEndlessMode()) return 0;
+    return recordEndlessBestWave(endlessMapId, wave);
   }
 
   function reapDeadEnemies() {
@@ -635,7 +638,11 @@ export function createGame({
       secondaryConfidence: Math.round((ranked[1]?.score ?? 0) * 100)
     });
 
-    const adviceText = `AI建议：优先建 ${ai.getTowerDisplayName(rec.primary)} — ${rec.reason}`;
+    const secondaryName = ai.getTowerDisplayName(rec.secondary);
+    const adviceText =
+      rec.secondary !== rec.primary
+        ? `AI建议：${ai.getTowerDisplayName(rec.primary)} + ${secondaryName} — ${rec.reason}`
+        : `AI建议：${ai.getTowerDisplayName(rec.primary)} — ${rec.reason}`;
     wavePreview.setAiAdvice(adviceText);
     return rec;
   }
@@ -692,7 +699,7 @@ export function createGame({
 
   function finishLevel(success) {
     if (levelFinished) return;
-    clearSessionDocument();
+    clearModeSession(sessionMode);
     levelFinished = true;
 
     timeFreezeRemaining = 0;
@@ -711,9 +718,7 @@ export function createGame({
     if (success && !isEndlessMode() && stars >= 3) {
       sessionGemsEarned += awardPerfectStarGems(currentLevelId);
     }
-    const endlessBestWave = isEndlessMode()
-      ? recordEndlessBestWave(endlessMapId, wave)
-      : 0;
+    const endlessBestWave = isEndlessMode() ? syncEndlessBestWave() : 0;
     const payload = {
       levelId: currentLevelId,
       mode: sessionMode,
@@ -850,7 +855,7 @@ export function createGame({
     wavePreview.hide();
     startWave();
     updateHud();
-    clearSessionDocument();
+    clearModeSession(sessionMode);
   }
 
   function beginActiveWave() {
@@ -863,6 +868,9 @@ export function createGame({
     currentWaveLeaks = 0;
     waveTowerBusyTime = 0;
     waveActiveDuration = 0;
+    if (isEndlessMode()) {
+      syncEndlessBestWave();
+    }
     campaignPreviewShown = false;
     if (isEndlessMode()) {
       wavePreview.hide();
@@ -952,6 +960,7 @@ export function createGame({
     wave += 1;
     if (isEndlessMode()) {
       audio?.setEndlessWave(wave);
+      syncEndlessBestWave();
     }
     startWave();
   }
@@ -978,6 +987,10 @@ export function createGame({
     }
 
     runDifficultyAIAfterWave();
+
+    if (isEndlessMode()) {
+      syncEndlessBestWave();
+    }
 
     const nextWave = wave + 1;
     if (!isEndlessMode() && nextWave <= TOTAL_WAVES) {
@@ -1587,7 +1600,7 @@ export function createGame({
     startCampaignLevel(levelId, opts = {}) {
       loadCampaignLevel(levelId);
       if (opts.resumeFromSave) {
-        const doc = loadSessionDocument();
+        const doc = loadModeSession('campaign');
         if (doc && sessionMatchesStart(doc, { mode: 'campaign', levelId, mapId: null })) {
           applyBattleSnapshot(doc.snapshot);
           if (!running) {
@@ -1612,7 +1625,7 @@ export function createGame({
     startEndlessMap(mapId, opts = {}) {
       loadEndlessMap(mapId);
       if (opts.resumeFromSave) {
-        const doc = loadSessionDocument();
+        const doc = loadModeSession('endless');
         if (doc && sessionMatchesStart(doc, { mode: 'endless', levelId: null, mapId })) {
           applyBattleSnapshot(doc.snapshot);
           if (!running) {
@@ -1668,10 +1681,11 @@ export function createGame({
       targetGameSpeed = speed;
     },
     persistMidGameSave,
-    clearSessionSave: clearSessionDocument,
+    clearSessionSave(mode) {
+      clearModeSession(mode ?? sessionMode);
+    },
     shouldOfferResumeFor({ mode, levelId, mapId }) {
-      const doc = loadSessionDocument();
-      return Boolean(doc && sessionMatchesStart(doc, { mode, levelId, mapId }));
+      return hasModeSession(mode, { levelId, mapId });
     }
   };
 }

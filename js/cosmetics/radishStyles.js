@@ -162,7 +162,7 @@ let nailongImageReady = false;
 nailongImage.onload = () => {
   nailongImageReady = nailongImage.naturalWidth > 0;
 };
-nailongImage.src = '1.png';
+nailongImage.src = 'assets/1.png';
 
 /** 奶龙：优先使用 assets/1.png，否则 Canvas 绘制 */
 function drawNailongWings(ctx) {

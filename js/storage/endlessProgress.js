@@ -25,10 +25,16 @@ export function getEndlessBestWave(mapId, progress = loadEndlessBestWaves()) {
   return progress[mapId] || 0;
 }
 
+/** 若 wave 超过历史最高则立即写入并返回新纪录，否则返回当前最高 */
 export function recordEndlessBestWave(mapId, wave) {
   const progress = loadEndlessBestWaves();
-  const nextBest = Math.max(progress[mapId] || 0, wave);
-  progress[mapId] = nextBest;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
-  return nextBest;
+  const prev = progress[mapId] || 0;
+  if (wave <= prev) return prev;
+  progress[mapId] = wave;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  } catch {
+    /* ignore quota */
+  }
+  return wave;
 }

@@ -131,15 +131,44 @@ export class ArmorEnemy extends Enemy {
   }
 
   drawFace(ctx, x, y) {
-    ctx.fillStyle = '#c0392b';
-    const ew = 5;
+    const hurt = this.hpRatio <= 0.5;
+    const eyeCol = hurt ? '#ff4444' : '#cc3333';
+    // 发光的矩形眼睛（机甲风）
+    const ew = 6;
     const eh = 4;
-    ctx.fillRect(x - 7 - ew / 2, y - 3 - eh / 2, ew, eh);
-    ctx.fillRect(x + 7 - ew / 2, y - 3 - eh / 2, ew, eh);
-    ctx.strokeStyle = '#2c0b0b';
+    const eyeGrad1 = ctx.createLinearGradient(x - 7 - ew / 2, y - 3 - eh / 2, x - 7 + ew / 2, y - 3 + eh / 2);
+    eyeGrad1.addColorStop(0, eyeCol);
+    eyeGrad1.addColorStop(1, '#1a0000');
+    ctx.fillStyle = eyeGrad1;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x - 7 - ew / 2, y - 3 - eh / 2, ew, eh, 2);
+    else ctx.rect(x - 7 - ew / 2, y - 3 - eh / 2, ew, eh);
+    ctx.fill();
+
+    const eyeGrad2 = ctx.createLinearGradient(x + 7 - ew / 2, y - 3 - eh / 2, x + 7 + ew / 2, y - 3 + eh / 2);
+    eyeGrad2.addColorStop(0, eyeCol);
+    eyeGrad2.addColorStop(1, '#1a0000');
+    ctx.fillStyle = eyeGrad2;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x + 7 - ew / 2, y - 3 - eh / 2, ew, eh, 2);
+    else ctx.rect(x + 7 - ew / 2, y - 3 - eh / 2, ew, eh);
+    ctx.fill();
+
+    // 眼睛边框
+    ctx.strokeStyle = hurt ? '#ff8888' : '#ff4444';
     ctx.lineWidth = 1;
     ctx.strokeRect(x - 7 - ew / 2, y - 3 - eh / 2, ew, eh);
     ctx.strokeRect(x + 7 - ew / 2, y - 3 - eh / 2, ew, eh);
+
+    // 嘴巴（格栅线）
+    ctx.strokeStyle = hurt ? 'rgba(255,60,60,0.7)' : 'rgba(180,60,60,0.55)';
+    ctx.lineWidth = 1;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x - 5, y + 4 + i * 2);
+      ctx.lineTo(x + 5, y + 4 + i * 2);
+      ctx.stroke();
+    }
   }
 
   drawImmuneFx(ctx, x, y) {

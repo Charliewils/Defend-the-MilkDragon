@@ -1,4 +1,5 @@
 import { getEnemyConfig } from '../../config/enemies.js';
+import { drawStyledHealthBar } from '../../render/vectorArt.js';
 import {
   getEndlessWaveHpMultiplier,
   getEndlessWaveSpeedMultiplier
@@ -259,26 +260,10 @@ export class Enemy {
 
   drawHealthBar(ctx, x, y) {
     if (!this.alive || this.isInvisible) return;
-
-    const barW = this.radius * 2;
-    const barH = 4;
-    const barX = x - barW / 2;
-    const barY = y - this.radius - 8;
-    const ratio = this.hp / this.maxHp;
-
-    ctx.fillStyle = '#550000';
-    ctx.fillRect(barX, barY, barW, barH);
-
-    ctx.fillStyle = this.getHealthBarColor(ratio);
-    ctx.fillRect(barX, barY, barW * ratio, barH);
-
-    if (this.isBoss) {
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(`${Math.ceil(this.hp)}/${this.maxHp}`, x, barY - 2);
-    }
+    drawStyledHealthBar(ctx, x, y, this.radius, this.hp / this.maxHp, {
+      isBoss: this.isBoss,
+      hpText: this.isBoss ? `${Math.ceil(this.hp)}/${this.maxHp}` : ''
+    });
   }
 
   drawButterRootOverlay(ctx, x, y) {

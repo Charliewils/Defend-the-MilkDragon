@@ -15,12 +15,44 @@ const TOWER_TRAIN_OPTS = {
 
 const TOWER_DISPLAY_NAMES = {
   normal: '普通炮台',
-  ice: '冷冻炮台',
-  titan: '擎天炮台',
-  hell: '地狱炮台',
-  lava: '熔岩炮台',
+  ice: '寒冰炮台',
+  titan: '擎天柱',
+  hell: '多头塔',
+  lava: '熔岩器',
   spread: '散射炮台',
   butter: '黄油炮台'
+};
+
+/** 各敌人类型对炮台的克制权重（0~1），数值越高越适合 */
+const TOWER_COUNTER_MATRIX = {
+  normal: { normal: 0.92, butter: 0.78, ice: 0.55, hell: 0.48, spread: 0.42, lava: 0.4, titan: 0.32 },
+  rush: { ice: 0.95, butter: 0.82, spread: 0.52, normal: 0.48, hell: 0.45, lava: 0.4, titan: 0.38 },
+  stealth: { spread: 0.9, lava: 0.62, hell: 0.58, butter: 0.45, ice: 0.38, titan: 0.42, normal: 0.28 },
+  armor: { lava: 0.93, titan: 0.88, hell: 0.52, spread: 0.45, normal: 0.35, ice: 0.32, butter: 0.28 },
+  split_worm: { titan: 0.92, lava: 0.82, spread: 0.68, normal: 0.62, hell: 0.55, ice: 0.48, butter: 0.42 },
+  squad: { hell: 0.9, lava: 0.65, butter: 0.58, normal: 0.55, spread: 0.52, ice: 0.42, titan: 0.48 },
+  boss: { titan: 0.96, lava: 0.82, hell: 0.72, ice: 0.5, spread: 0.42, butter: 0.38, normal: 0.22 }
+};
+
+/** 主推荐为 AOE/多目标时，次推荐优先选控制或单体 */
+const COMPLEMENTARY_TOWERS = {
+  spread: ['ice', 'titan', 'lava', 'butter', 'normal'],
+  hell: ['ice', 'titan', 'lava', 'butter', 'normal'],
+  lava: ['ice', 'titan', 'hell', 'normal'],
+  titan: ['ice', 'lava', 'hell', 'butter'],
+  ice: ['titan', 'hell', 'lava', 'normal'],
+  butter: ['ice', 'titan', 'lava', 'hell'],
+  normal: ['ice', 'lava', 'hell', 'titan']
+};
+
+const THREAT_REASONS = {
+  boss: (top) => `Boss 血量厚，${TOWER_DISPLAY_NAMES[top]}可打出百分比或持续伤害`,
+  stealth: (top) => `隐身怪占比高，${TOWER_DISPLAY_NAMES[top]}能在其现身时有效输出`,
+  rush: (top) => `加速怪较多，${TOWER_DISPLAY_NAMES[top]}可减速或定身`,
+  armor: (top) => `霸体战士为主，${TOWER_DISPLAY_NAMES[top]}擅长破甲与灼烧`,
+  split_worm: (top) => `裂变虫血厚且会分裂，${TOWER_DISPLAY_NAMES[top]}适合压制本体与子虫`,
+  squad: (top) => `小队敌人密集，${TOWER_DISPLAY_NAMES[top]}可同时处理多个目标`,
+  normal: (top) => `以普通怪为主，${TOWER_DISPLAY_NAMES[top]}性价比与火力均衡`
 };
 
 const DIFFICULTY_ANCHORS = [
@@ -34,32 +66,32 @@ const DIFFICULTY_ANCHORS = [
 
 const TOWER_SCENARIO_ANCHORS = [
   {
-    input: [0.15, 0.12, 0.55, 0.08, 0.05, 0, 0.65, 0.45],
-    output: [0.15, 0.1, 0.12, 0.1, 0.08, 0.95, 0.12]
+    input: [0.7, 0.1, 0.05, 0.05, 0.05, 0, 0.65, 0.45],
+    output: [0.88, 0.45, 0.35, 0.4, 0.38, 0.42, 0.55]
   },
   {
-    input: [0.2, 0.48, 0.1, 0.08, 0.05, 0, 0.6, 0.4],
-    output: [0.12, 0.9, 0.1, 0.1, 0.08, 0.15, 0.8]
+    input: [0.2, 0.55, 0.08, 0.08, 0.05, 0, 0.6, 0.4],
+    output: [0.4, 0.9, 0.35, 0.38, 0.4, 0.45, 0.82]
+  },
+  {
+    input: [0.15, 0.12, 0.55, 0.08, 0.05, 0, 0.65, 0.45],
+    output: [0.35, 0.4, 0.38, 0.42, 0.4, 0.88, 0.42]
   },
   {
     input: [0.18, 0.15, 0.1, 0.12, 0.35, 1, 0.7, 0.55],
-    output: [0.1, 0.12, 0.92, 0.15, 0.1, 0.2, 0.1]
+    output: [0.32, 0.38, 0.92, 0.55, 0.48, 0.4, 0.35]
   },
   {
-    input: [0.15, 0.12, 0.1, 0.42, 0.08, 0, 0.55, 0.5],
-    output: [0.1, 0.12, 0.75, 0.12, 0.88, 0.15, 0.1]
+    input: [0.15, 0.12, 0.1, 0.45, 0.08, 0, 0.55, 0.5],
+    output: [0.35, 0.35, 0.85, 0.45, 0.9, 0.42, 0.32]
   },
   {
-    input: [0.55, 0.15, 0.08, 0.1, 0.05, 0, 0.62, 0.35],
-    output: [0.12, 0.1, 0.15, 0.9, 0.12, 0.85, 0.1]
+    input: [0.12, 0.1, 0.08, 0.08, 0.45, 0, 0.6, 0.4],
+    output: [0.5, 0.42, 0.48, 0.88, 0.62, 0.55, 0.52]
   },
   {
     input: [0.28, 0.22, 0.18, 0.15, 0.12, 0, 0.72, 0.25],
-    output: [0.55, 0.45, 0.5, 0.48, 0.52, 0.5, 0.48]
-  },
-  {
-    input: [0.25, 0.2, 0.2, 0.18, 0.12, 0, 0.22, 0.3],
-    output: [0.85, 0.55, 0.2, 0.35, 0.25, 0.4, 0.45]
+    output: [0.62, 0.55, 0.52, 0.58, 0.55, 0.54, 0.56]
   }
 ];
 
@@ -196,6 +228,8 @@ export class GameAI {
       confidence: 0,
       reason: ''
     };
+    this.lastRecommendedPrimary = null;
+    this.recommendationStreak = 0;
   }
 
   trainAll() {
@@ -277,89 +311,161 @@ export class GameAI {
     return '全力以赴 😱';
   }
 
+  computeCounterScores(features) {
+    const weights = {
+      normal: features.normalEnemyRatio,
+      rush: features.rushEnemyRatio,
+      stealth: features.stealthEnemyRatio,
+      armor: features.armorEnemyRatio,
+      split_worm: features.splitWormRatio,
+      squad: features.squadRatio,
+      boss: features.hasBoss ? Math.max(0.35, features.splitWormRatio + 0.25) : 0
+    };
+
+    const totalWeight = Object.values(weights).reduce((s, v) => s + v, 0) || 1;
+
+    return TOWER_ORDER.map((towerId) => {
+      let score = 0;
+      for (const [enemyKey, ratio] of Object.entries(weights)) {
+        if (ratio <= 0) continue;
+        const counter = TOWER_COUNTER_MATRIX[enemyKey]?.[towerId] ?? 0.35;
+        score += (ratio / totalWeight) * counter;
+      }
+      return clamp01(score);
+    });
+  }
+
+  getDominantThreat(features) {
+    const candidates = [
+      { key: 'boss', ratio: features.hasBoss ? 1 : 0 },
+      { key: 'stealth', ratio: features.stealthEnemyRatio },
+      { key: 'rush', ratio: features.rushEnemyRatio },
+      { key: 'armor', ratio: features.armorEnemyRatio },
+      { key: 'split_worm', ratio: features.splitWormRatio },
+      { key: 'squad', ratio: features.squadRatio },
+      { key: 'normal', ratio: features.normalEnemyRatio }
+    ];
+    candidates.sort((a, b) => b.ratio - a.ratio);
+    return candidates[0]?.ratio >= 0.18 ? candidates[0] : { key: 'normal', ratio: features.normalEnemyRatio };
+  }
+
+  applyEconomyModifiers(scores, features, builtTowerTypes) {
+    return scores.map((score, i) => {
+      const type = TOWER_ORDER[i];
+      let next = score;
+
+      const builtCount = builtTowerTypes.filter((t) => t === type).length;
+      if (builtCount >= 2) next *= 0.72;
+      else if (builtCount === 1) next *= 0.88;
+
+      if (features.goldRatio > 0.6) {
+        next *= builtTowerTypes.includes(type) ? 0.9 : 1.06;
+      }
+      if (features.goldRatio < 0.3) {
+        const cost = TOWER_CONFIGS[type].cost;
+        if (cost <= 75) next *= 1.12;
+        else if (cost <= 90) next *= 1.04;
+        else next *= 0.88;
+      }
+
+      return clamp01(next);
+    });
+  }
+
+  applyDiversityPenalty(scores) {
+    if (!this.lastRecommendedPrimary) return scores;
+    const idx = TOWER_ORDER.indexOf(this.lastRecommendedPrimary);
+    if (idx < 0) return scores;
+
+    const penalty = this.recommendationStreak >= 2 ? 0.78 : 0.9;
+    return scores.map((s, i) => (i === idx ? s * penalty : s));
+  }
+
+  pickComplementarySecondary(primary, ranked) {
+    const prefs = COMPLEMENTARY_TOWERS[primary] || TOWER_ORDER;
+    for (const type of prefs) {
+      const entry = ranked.find((r) => r.type === type);
+      if (entry && entry.type !== primary) return entry.type;
+    }
+    return ranked.find((r) => r.type !== primary)?.type ?? primary;
+  }
+
   recommendTowers(waveFeatures, builtTowerTypes = []) {
-    let scores = this.predictTowers(waveFeatures);
+    const counterScores = this.computeCounterScores(waveFeatures);
+    const nnScores = this.predictTowers(waveFeatures);
 
-    if (waveFeatures.stealthEnemyRatio > 0.35) {
-      scores = scores.map((s, i) => (TOWER_ORDER[i] === 'spread' ? Math.max(s, 0.92) : s));
-    }
-    if (waveFeatures.rushEnemyRatio > 0.35) {
-      scores = scores.map((s, i) => {
-        if (TOWER_ORDER[i] === 'ice') return Math.max(s, 0.88);
-        if (TOWER_ORDER[i] === 'butter') return Math.max(s, 0.78);
-        return s;
-      });
-    }
-    if (waveFeatures.hasBoss && waveFeatures.splitWormRatio > 0.08) {
-      scores = scores.map((s, i) => (TOWER_ORDER[i] === 'titan' ? Math.max(s, 0.9) : s));
-    }
-    if (waveFeatures.armorEnemyRatio > 0.28) {
-      scores = scores.map((s, i) => {
-        if (TOWER_ORDER[i] === 'lava') return Math.max(s, 0.86);
-        if (TOWER_ORDER[i] === 'titan') return Math.max(s, 0.72);
-        return s;
-      });
-    }
-    if (waveFeatures.squadRatio > 0.35) {
-      scores = scores.map((s, i) => {
-        if (TOWER_ORDER[i] === 'hell') return Math.max(s, 0.88);
-        if (TOWER_ORDER[i] === 'spread') return Math.max(s, 0.82);
-        return s;
-      });
-    }
+    let scores = TOWER_ORDER.map((_, i) =>
+      clamp01(counterScores[i] * 0.82 + nnScores[i] * 0.18)
+    );
 
-    if (waveFeatures.goldRatio > 0.6) {
-      scores = scores.map((s, i) => {
-        const type = TOWER_ORDER[i];
-        return builtTowerTypes.includes(type) ? s * 0.85 : s * 1.08;
-      });
-    }
-    if (waveFeatures.goldRatio < 0.3) {
-      scores = scores.map((s, i) => {
-        const cost = TOWER_CONFIGS[TOWER_ORDER[i]].cost;
-        const affordableBoost = cost <= 75 ? 1.15 : cost <= 90 ? 1.05 : 0.85;
-        return s * affordableBoost;
-      });
-    }
+    scores = this.applyEconomyModifiers(scores, waveFeatures, builtTowerTypes);
+    scores = this.applyDiversityPenalty(scores);
 
-    const ranked = TOWER_ORDER.map((type, i) => ({ type, score: scores[i] }))
+    let ranked = TOWER_ORDER.map((type, i) => ({ type, score: scores[i] }))
       .sort((a, b) => b.score - a.score);
 
-    const primary = ranked[0].type;
-    const secondary = ranked[1]?.type ?? ranked[0].type;
-    const confidence = Math.round(ranked[0].score * 100);
+    let primary = ranked[0].type;
+    const runnerUp = ranked[1];
+
+    if (
+      this.lastRecommendedPrimary === primary &&
+      runnerUp &&
+      runnerUp.score >= ranked[0].score * 0.92
+    ) {
+      primary = runnerUp.type;
+      ranked = [
+        runnerUp,
+        ranked[0],
+        ...ranked.slice(2)
+      ];
+    }
+
+    const secondary = this.pickComplementarySecondary(primary, ranked);
+    const primaryScore = ranked.find((r) => r.type === primary)?.score ?? ranked[0].score;
+    const confidence = Math.round(primaryScore * 100);
+
+    if (this.lastRecommendedPrimary === primary) {
+      this.recommendationStreak += 1;
+    } else {
+      this.lastRecommendedPrimary = primary;
+      this.recommendationStreak = 1;
+    }
+
+    const threat = this.getDominantThreat(waveFeatures);
+    const reason = this.buildRecommendReason(waveFeatures, primary, secondary, threat);
 
     this.towerRecommendation = {
       primary,
       secondary,
       scores,
       confidence,
-      reason: this.buildRecommendReason(waveFeatures, primary)
+      reason,
+      dominantThreat: threat.key
     };
 
     return this.towerRecommendation;
   }
 
-  buildRecommendReason(features, topType) {
-    if (features.stealthEnemyRatio > 0.35) {
-      return '本波隐身怪较多，散射炮台可无视隐身';
+  buildRecommendReason(features, primary, secondary, threat) {
+    const topName = TOWER_DISPLAY_NAMES[primary];
+    const secondName = TOWER_DISPLAY_NAMES[secondary];
+
+    if (features.goldRatio < 0.28) {
+      return `金币紧张，优先补 ${topName}；有余力可备 ${secondName}`;
     }
-    if (features.hasBoss && features.splitWormRatio > 0.08) {
-      return 'Boss来袭，擎天炮台额外伤害效果显著';
+
+    const threatLine = THREAT_REASONS[threat.key]?.(primary);
+    if (threatLine) {
+      if (secondary !== primary) {
+        return `${threatLine}；次选 ${secondName} 互补`;
+      }
+      return threatLine;
     }
-    if (features.rushEnemyRatio > 0.35) {
-      return '加速怪为主，冷冻+黄油炮台组合有效';
+
+    if (secondary !== primary) {
+      return `综合本波构成，${topName} 最契合；${secondName} 可作补充`;
     }
-    if (features.armorEnemyRatio > 0.28) {
-      return '霸体战士较多，熔岩炮台持续灼烧破甲';
-    }
-    if (features.squadRatio > 0.35) {
-      return '小队敌人密集，地狱+散射炮台清场高效';
-    }
-    if (features.goldRatio < 0.3) {
-      return `金币紧张，优先建造性价比高的${TOWER_DISPLAY_NAMES[topType]}`;
-    }
-    return `综合本波敌人构成，${TOWER_DISPLAY_NAMES[topType]}最为契合`;
+    return `综合本波敌人构成，${topName} 最为契合`;
   }
 
   getTowerDisplayName(typeId) {
